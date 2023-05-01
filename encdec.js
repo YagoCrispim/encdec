@@ -1,7 +1,7 @@
-// NodeJS 18.14.0
 const crypto = require("crypto");
 const fs = require("fs");
 const readline = require("readline");
+const Writable = require("stream").Writable;
 
 function encrypt(key, text) {
   const cipher = crypto.createCipher("aes-256-cbc", key);
@@ -30,15 +30,24 @@ function saveFileContent(path, content) {
 }
 
 function authOperation(cb) {
+  const mutableStdout = new Writable({
+    write: function (chunk, encoding, callback) {
+      if (!this.muted) process.stdout.write(chunk, encoding);
+      callback();
+    },
+  });
+
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout,
+    output: mutableStdout,
+    terminal: true,
   });
 
   rl.question("Digite a senha: ", (key) => {
     cb(key);
     rl.close();
   });
+  mutableStdout.muted = true;
 }
 
 try {
