@@ -3,6 +3,9 @@ const fs = require("fs");
 const readline = require("readline");
 const Writable = require("stream").Writable;
 
+const operation = process.argv[2];
+const path = process.argv[3];
+
 function encrypt(key, text) {
   const cipher = crypto.createCipher("aes-256-cbc", key);
   const encryptedText = cipher.update(text, "utf8", "hex");
@@ -50,34 +53,48 @@ function authOperation(cb) {
   mutableStdout.muted = true;
 }
 
-try {
-  const operation = process.argv[2];
-  const path = process.argv[3];
+function printError(message) {
+  console.log("\n---------- [ERROR] ----------");
+  console.log(message);
+  console.log("-----------------------------\n");
+}
 
-  if (operation === "enc") {
+if (operation === "enc") {
+  try {
     authOperation((key) => {
+      if (!key) {
+        printError("Key not found");
+        return;
+      }
       const text = loadFileContent(path);
       if (!text) throw "File is empty or not found";
       const encryptedText = encrypt(key, text);
       saveFileContent(path, encryptedText);
     });
     return;
+  } catch (_) {
+    printError("Error encrypting file");
+    return;
   }
+}
 
-  if (operation === "dec") {
+if (operation === "dec") {
+  try {
     authOperation((key) => {
+      if (!key) {
+        printError("Key not found");
+        return;
+      }
       const text = loadFileContent(path);
       const decryptedText = decrypt(key, text);
       saveFileContent(path, decryptedText);
     });
     return;
+  } catch (_) {
+    printError("Invalid key or error decrypting file");
+    return;
   }
-
-  console.log("Invalid operation");
-  console.log("Usage: node encdec.js <enc | dec> <file_path>");
-} catch (error) {
-  console.log("\n---------- [ERROR] ----------");
-  console.log("Error executing the program");
-  console.log("Error message: " + error);
-  console.log("-----------------------------\n");
 }
+
+console.log("Invalid operation");
+console.log("Usage: node encdec.js <enc | dec> <file_path>");
