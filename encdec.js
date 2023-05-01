@@ -1,6 +1,7 @@
 // NodeJS 18.14.0
 const crypto = require("crypto");
 const fs = require("fs");
+const readline = require("readline");
 
 function encrypt(key, text) {
   const cipher = crypto.createCipher("aes-256-cbc", key);
@@ -28,25 +29,38 @@ function saveFileContent(path, content) {
   });
 }
 
+function authOperation(cb) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  rl.question("Digite a senha: ", (key) => {
+    cb(key);
+    rl.close();
+  });
+}
+
 try {
-  const keyFilePath = "FILE_PWD_PATH";
   const operation = process.argv[2];
   const path = process.argv[3];
 
   if (operation === "enc") {
-    const key = loadFileContent(keyFilePath);
-    const text = loadFileContent(path);
-    if (!text) throw "File is empty or not found";
-    const encryptedText = encrypt(key, text);
-    saveFileContent(path, encryptedText);
+    authOperation((key) => {
+      const text = loadFileContent(path);
+      if (!text) throw "File is empty or not found";
+      const encryptedText = encrypt(key, text);
+      saveFileContent(path, encryptedText);
+    });
     return;
   }
 
   if (operation === "dec") {
-    const key = loadFileContent(keyFilePath);
-    const text = loadFileContent(path);
-    const decryptedText = decrypt(key, text);
-    saveFileContent(path, decryptedText);
+    authOperation((key) => {
+      const text = loadFileContent(path);
+      const decryptedText = decrypt(key, text);
+      saveFileContent(path, decryptedText);
+    });
     return;
   }
 
